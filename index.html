@@ -1,0 +1,347 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f8fafc">
+<title>마스크 착용시간 다이어리</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{background:#f8fafc;color:#1e293b;padding:16px;max-width:480px;margin:auto}
+.header{background:#0f172a;color:white;padding:16px 20px;border-radius:20px;margin-bottom:16px}
+.header h1{font-size:17px;font-weight:700}
+.header p{font-size:11px;color:#94a3b8;margin-top:4px}
+.card{background:white;border-radius:20px;padding:18px;margin-bottom:16px;border:1px solid #e2e8f0;box-shadow:0 2px 8px #00000008}
+.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.cal-title{font-size:16px;font-weight:700;color:#0f172a}
+.cal-btn{background:#f1f5f9;border:0;width:34px;height:34px;border-radius:10px;font-weight:700;color:#475569;font-size:17px}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.day-name{font-size:11px;font-weight:600;color:#94a3b8;padding-bottom:6px}
+.day-cell{background:white;border-radius:12px;padding:6px 2px;min-height:52px;font-size:12px;border:1px solid #e2e8f0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;cursor:pointer}
+.day-cell.selected{border:2px solid #2563eb;background:#eff6ff}
+.day-cell.today{outline:2px solid #f59e0b;outline-offset:-2px}
+.time-badge{font-size:9px;background:#2563eb;color:white;padding:2px 4px;border-radius:6px;font-weight:700}
+.stats-table{width:100%;border-collapse:collapse;margin-bottom:12px;background:#f8fafc;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0}
+.stats-table th,.stats-table td{padding:10px 5px;text-align:center;font-size:11px}
+.stats-table th{background:#f1f5f9;color:#475569;font-weight:700;border-bottom:1px solid #e2e8f0}
+.stats-table td{font-weight:800;font-size:13px}
+.section-title-wrap{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid #f1f5f9;padding-bottom:10px}
+.section-title{font-size:15px;font-weight:700;color:#0f172a}
+.badge-night{background:#fef3c7;color:#b45309;font-size:10px;padding:4px 7px;border-radius:8px;font-weight:600}
+.input-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;margin-bottom:10px}
+.input-label{font-size:12px;font-weight:700;color:#475569;margin-bottom:6px}
+.input-row{display:flex;gap:8px}
+input[type=date],input[type=time],input[type=text]{min-width:0;flex:1;padding:9px 7px;border:1px solid #cbd5e1;border-radius:8px;font-size:12px;background:white;color:#1e293b}
+input[type=text]{width:100%}
+.btn{width:100%;padding:12px;border-radius:12px;border:0;font-weight:700;font-size:13px;cursor:pointer}
+.btn-primary{background:#2563eb;color:white;margin-top:6px}
+.btn-toggle{background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;padding:10px;margin-top:12px;display:flex;justify-content:space-between}
+.add-form-container{display:none;background:#f0fdf4;padding:12px;border-radius:14px;margin-top:10px;border:1px solid #bbf7d0}
+.record-item{background:#f8fafc;border-radius:12px;padding:10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid #e2e8f0}
+.tag-basic{background:#fef08a;color:#854d0e;padding:3px 7px;border-radius:6px;font-size:10px;font-weight:700}
+.tag-add{background:#bbf7d0;color:#166534;padding:3px 7px;border-radius:6px;font-size:10px;font-weight:700}
+.memo-text{font-size:11px;color:#475569;margin-top:4px;word-break:break-word}
+.delete-btn,.edit-btn{border:0;background:none;font-size:12px;padding:5px;cursor:pointer}
+.delete-btn{color:#ef4444}.edit-btn{color:#2563eb}
+.record-actions{display:flex;align-items:center;gap:2px}
+.backup-row{display:flex;gap:8px;margin-top:12px}
+.backup-row button{flex:1;padding:10px 4px;border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;color:#475569;font-size:11px;font-weight:700}
+.small-note{font-size:10px;color:#94a3b8;line-height:1.5;margin-top:9px}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>⏰ 마스크 착용시간 다이어리</h1>
+<p>페이스마스크 착용 시간 기록 관리</p>
+</div>
+
+<div class="card">
+<div class="cal-header">
+<button class="cal-btn" onclick="moveMonth(-1)">‹</button>
+<div class="cal-title" id="calMonth"></div>
+<button class="cal-btn" onclick="moveMonth(1)">›</button>
+</div>
+<div class="calendar-grid">
+<div class="day-name" style="color:#ef4444">일</div>
+<div class="day-name">월</div><div class="day-name">화</div>
+<div class="day-name">수</div><div class="day-name">목</div>
+<div class="day-name">금</div>
+<div class="day-name" style="color:#2563eb">토</div>
+</div>
+<div class="calendar-grid" id="calendarDays" style="margin-top:4px"></div>
+</div>
+
+<div class="card">
+<div style="font-size:14px;font-weight:700;margin-bottom:8px" id="selectedDateText"></div>
+<table class="stats-table">
+<thead><tr><th>하루 총 합산 착용시간</th><th>이번 달 총 누적 착용시간</th></tr></thead>
+<tbody><tr><td style="color:#2563eb" id="dayTotalText">0시간 0분</td><td style="color:#059669" id="monthTotalText">0시간 0분</td></tr></tbody>
+</table>
+<div style="font-size:12px;font-weight:700;margin-bottom:6px;color:#475569">착용 기록 목록</div>
+<div id="recordsList"></div>
+</div>
+
+<div class="card">
+<div class="section-title-wrap">
+<span class="section-title">✏️ 착용시간 입력</span>
+<span class="badge-night">🌙 전날~당일</span>
+</div>
+<div class="input-box">
+<div class="input-label">▶ 착용 시작 시각</div>
+<div class="input-row"><input type="date" id="startDate"><input type="time" id="startTime" value="20:30"></div>
+</div>
+<div class="input-box">
+<div class="input-label">■ 착용 종료 시각</div>
+<div class="input-row"><input type="date" id="endDate"><input type="time" id="endTime" value="08:00"></div>
+</div>
+<div class="input-box">
+<div class="input-label">📝 메모</div>
+<input type="text" id="memo" placeholder="예: 야간 수면 착용">
+</div>
+<button class="btn btn-primary" onclick="addRecord('basic')">✓ 기본 착용시간 저장하기</button>
+
+<button class="btn btn-toggle" onclick="toggleAddForm()">
+<span>➕ 주말/휴일 추가시간 입력</span><span id="toggleIcon">▼</span>
+</button>
+<div id="addForm" class="add-form-container">
+<div class="input-box" style="background:white">
+<div class="input-label" style="color:#047857">▶ 추가 시작 시각</div>
+<div class="input-row"><input type="date" id="addStartDate"><input type="time" id="addStartTime" value="13:00"></div>
+</div>
+<div class="input-box" style="background:white">
+<div class="input-label" style="color:#047857">■ 추가 종료 시각</div>
+<div class="input-row"><input type="date" id="addEndDate"><input type="time" id="addEndTime" value="16:00"></div>
+</div>
+<div class="input-box" style="background:white">
+<div class="input-label" style="color:#047857">📝 메모</div>
+<input type="text" id="addMemo" placeholder="예: 주말 낮 추가 착용">
+</div>
+<button class="btn" style="background:#059669;color:white" onclick="addRecord('additional')">+ 주말/휴일 추가시간 저장하기</button>
+</div>
+</div>
+
+<div class="card">
+<div style="font-size:13px;font-weight:700;margin-bottom:8px">데이터 백업</div>
+<div class="backup-row">
+<button onclick="exportBackup()">백업 파일 저장</button>
+<button onclick="document.getElementById('importFile').click()">백업 복원</button>
+<input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importBackup(event)">
+</div>
+<div class="small-note">기록은 현재 사용하는 브라우저에 저장돼요. 브라우저 데이터 삭제나 기기 변경에 대비해 가끔 백업 파일을 저장해 주세요.</div>
+</div>
+
+<script>
+const STORAGE_KEY = 'mask_diary_data';
+let currentDate = new Date();
+let selectedDateStr = formatDate(currentDate);
+let records = {};
+try {
+  records = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  if (!records || typeof records !== 'object' || Array.isArray(records)) records = {};
+} catch(e) { records = {}; }
+
+function formatDate(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth()+1).padStart(2,'0');
+  const d = String(date.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+function dateFromString(str) {
+  const [y,m,d] = str.split('-').map(Number);
+  return new Date(y,m-1,d);
+}
+function durationMinutes(sDate,sTime,eDate,eTime) {
+  const start = new Date(`${sDate}T${sTime}:00`);
+  const end = new Date(`${eDate}T${eTime}:00`);
+  return Math.round((end-start)/60000);
+}
+function saveData() {
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(records));
+}
+function formatDuration(total) {
+  return `${Math.floor(total/60)}시간 ${total%60}분`;
+}
+function init() {
+  const yesterday = dateFromString(selectedDateStr);
+  yesterday.setDate(yesterday.getDate()-1);
+  document.getElementById('startDate').value = formatDate(yesterday);
+  document.getElementById('endDate').value = selectedDateStr;
+  document.getElementById('addStartDate').value = selectedDateStr;
+  document.getElementById('addEndDate').value = selectedDateStr;
+  renderAll();
+}
+function getDayTotalMinutes(dateStr) {
+  return (records[dateStr] || []).reduce((sum,item)=>sum+(Number(item.minutes)||0),0);
+}
+function getMonthTotalMinutes(year,month) {
+  const prefix = `${year}-${String(month+1).padStart(2,'0')}`;
+  return Object.keys(records).reduce((sum,key)=>key.startsWith(prefix)?sum+getDayTotalMinutes(key):sum,0);
+}
+function renderCalendar() {
+  const year=currentDate.getFullYear(), month=currentDate.getMonth();
+  document.getElementById('calMonth').innerText=`${year}년 ${month+1}월`;
+  const firstDay=new Date(year,month,1).getDay();
+  const lastDate=new Date(year,month+1,0).getDate();
+  const todayStr=formatDate(new Date());
+  let html='';
+  for(let i=0;i<firstDay;i++) html+='<div></div>';
+  for(let d=1;d<=lastDate;d++) {
+    const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const selected=dateStr===selectedDateStr?'selected':'';
+    const today=dateStr===todayStr?'today':'';
+    const total=getDayTotalMinutes(dateStr);
+    const badge=total>0?`<div class="time-badge">${Math.floor(total/60)}h ${total%60}m</div>`:'';
+    html+=`<div class="day-cell ${selected} ${today}" onclick="selectDate('${dateStr}')"><span style="font-weight:700">${d}</span>${badge}</div>`;
+  }
+  document.getElementById('calendarDays').innerHTML=html;
+}
+function renderSelectedDate() {
+  const [y,m,d]=selectedDateStr.split('-');
+  document.getElementById('selectedDateText').innerText=`${y}년 ${Number(m)}월 ${Number(d)}일`;
+  const list=records[selectedDateStr]||[];
+  document.getElementById('dayTotalText').innerText=formatDuration(getDayTotalMinutes(selectedDateStr));
+  document.getElementById('monthTotalText').innerText=formatDuration(getMonthTotalMinutes(currentDate.getFullYear(),currentDate.getMonth()));
+  const container=document.getElementById('recordsList');
+  if(!list.length) {
+    container.innerHTML='<div style="font-size:12px;color:#94a3b8;text-align:center;padding:12px;background:#f8fafc;border-radius:10px">등록된 기록이 없습니다.</div>';
+    return;
+  }
+  container.innerHTML=list.map((item,idx)=>{
+    const basic=item.type==='basic';
+    const title=basic?'기본 착용시간':'주말/휴일 추가착용';
+    const tag=basic?'tag-basic':'tag-add';
+    const startDate=item.startDate||'';
+    const endDate=item.endDate||selectedDateStr;
+    const dateText=(startDate && startDate!==endDate)?`${startDate} `:'';
+    const memo=item.memo?`<div class="memo-text">💬 ${escapeHtml(item.memo)}</div>`:'';
+    return `<div class="record-item">
+      <div style="min-width:0;flex:1">
+        <span class="${tag}">${title}</span>
+        <div style="font-size:11px;color:#64748b;margin-top:4px">${dateText}${item.startTime} ~ ${item.endTime}</div>
+        ${memo}
+      </div>
+      <div style="text-align:right">
+        <b style="font-size:12px;color:#2563eb;white-space:nowrap">+${formatDuration(item.minutes)}</b>
+        <div class="record-actions">
+          <button class="edit-btn" onclick="editRecord(${idx})">수정</button>
+          <button class="delete-btn" onclick="deleteRecord(${idx})">삭제</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+function renderAll() { renderCalendar(); renderSelectedDate(); }
+function selectDate(dateStr) {
+  selectedDateStr=dateStr;
+  const yesterday=dateFromString(dateStr);
+  yesterday.setDate(yesterday.getDate()-1);
+  document.getElementById('startDate').value=formatDate(yesterday);
+  document.getElementById('endDate').value=dateStr;
+  document.getElementById('addStartDate').value=dateStr;
+  document.getElementById('addEndDate').value=dateStr;
+  renderAll();
+}
+function toggleAddForm() {
+  const form=document.getElementById('addForm');
+  const open=form.style.display==='block';
+  form.style.display=open?'none':'block';
+  document.getElementById('toggleIcon').innerText=open?'▼':'▲';
+}
+function addRecord(type) {
+  const prefix=type==='basic'?'':'add';
+  const sDate=document.getElementById(prefix+'StartDate').value;
+  const sTime=document.getElementById(prefix+'StartTime').value;
+  const eDate=document.getElementById(prefix+'EndDate').value;
+  const eTime=document.getElementById(prefix+'EndTime').value;
+  const memo=document.getElementById(prefix+'Memo').value.trim();
+  if(!sDate||!sTime||!eDate||!eTime) { alert('시작 날짜와 종료 날짜 및 시간을 모두 입력해 주세요.'); return; }
+  const minutes=durationMinutes(sDate,sTime,eDate,eTime);
+  if(minutes<=0) { alert('종료 날짜와 시간이 시작보다 늦어야 합니다.'); return; }
+  if(minutes>24*60) { alert('한 번의 착용 기록은 24시간을 넘을 수 없어요.'); return; }
+  if(!records[eDate]) records[eDate]=[];
+  records[eDate].push({type,startDate:sDate,startTime:sTime,endDate:eDate,endTime:eTime,minutes,memo});
+  saveData();
+  if(type==='basic') document.getElementById('memo').value='';
+  else { document.getElementById('addMemo').value=''; toggleAddForm(); }
+  currentDate=dateFromString(eDate);
+  selectDate(eDate);
+}
+function editRecord(idx) {
+  const list=records[selectedDateStr]||[];
+  const item=list[idx];
+  if(!item) return;
+  const sDate=prompt('착용 시작 날짜 (YYYY-MM-DD)',item.startDate||selectedDateStr);
+  if(sDate===null) return;
+  const sTime=prompt('착용 시작 시간 (예: 20:30)',item.startTime);
+  if(sTime===null) return;
+  const eDate=prompt('착용 종료 날짜 (YYYY-MM-DD)',item.endDate||selectedDateStr);
+  if(eDate===null) return;
+  const eTime=prompt('착용 종료 시간 (예: 08:00)',item.endTime);
+  if(eTime===null) return;
+  const memo=prompt('메모',item.memo||'');
+  if(memo===null) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(sDate)||!/^\d{4}-\d{2}-\d{2}$/.test(eDate)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(sTime)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(eTime)) {
+    alert('날짜 또는 시간 형식이 올바르지 않습니다.'); return;
+  }
+  const minutes=durationMinutes(sDate,sTime,eDate,eTime);
+  if(minutes<=0||minutes>1440) { alert('종료 시각을 확인해 주세요. 착용시간은 24시간 이내여야 합니다.'); return; }
+  list.splice(idx,1);
+  if(!list.length) delete records[selectedDateStr];
+  if(!records[eDate]) records[eDate]=[];
+  records[eDate].push({...item,startDate:sDate,startTime:sTime,endDate:eDate,endTime:eTime,minutes,memo});
+  saveData();
+  currentDate=dateFromString(eDate);
+  selectDate(eDate);
+}
+function deleteRecord(idx) {
+  if(!confirm('이 기록을 삭제할까요?')) return;
+  records[selectedDateStr].splice(idx,1);
+  if(!records[selectedDateStr].length) delete records[selectedDateStr];
+  saveData();
+  renderAll();
+}
+function moveMonth(dir) {
+  const next=new Date(currentDate.getFullYear(),currentDate.getMonth()+dir,1);
+  currentDate=next;
+  selectedDateStr=formatDate(next);
+  selectDate(selectedDateStr);
+}
+function exportBackup() {
+  const data=JSON.stringify({app:'mask-wearing-diary',version:1,records},null,2);
+  const blob=new Blob([data],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`마스크착용기록_백업_${formatDate(new Date())}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importBackup(event) {
+  const file=event.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try {
+      const parsed=JSON.parse(reader.result);
+      const incoming=parsed.records||parsed;
+      if(!incoming||typeof incoming!=='object'||Array.isArray(incoming)) throw new Error();
+      if(!confirm('현재 기록을 백업 파일의 기록으로 교체할까요?')) return;
+      records=incoming;
+      saveData();
+      renderAll();
+      alert('백업 기록을 복원했어요.');
+    } catch(e) { alert('올바른 백업 파일이 아닙니다.'); }
+    finally { event.target.value=''; }
+  };
+  reader.readAsText(file);
+}
+init();
+</script>
+</body>
+</html>
